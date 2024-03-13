@@ -1,4 +1,4 @@
-package com.example.investsandbox2
+package com.example.investsandbox2.activities
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
