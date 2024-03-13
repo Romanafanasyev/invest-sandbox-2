@@ -1,5 +1,6 @@
 package com.example.investsandbox2.activities
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,15 +25,24 @@ class AuthorizationActivity : ComponentActivity() {
                         onLoginClicked = { username, password ->
                             // Placeholder for API interaction
                             println("Login clicked with username: $username and password: $password")
+                            moveToProfile(username)
                         },
                         onSignUpClicked = { username, password ->
                             // Placeholder for API interaction
                             println("Sign up clicked with username: $username and password: $password")
+                            moveToProfile(username)
                         }
                     )
                 }
             }
         }
+    }
+
+    private fun moveToProfile(username: String) {
+        val intent = Intent(this, ProfileActivity::class.java).apply {
+            putExtra("USERNAME", username)
+        }
+        startActivity(intent)
     }
 }
 
