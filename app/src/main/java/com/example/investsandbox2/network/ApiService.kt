@@ -31,33 +31,34 @@ interface ApiService {
 }
 
 data class BuyStockRequest(
-    val userId: Int,
-    val stockId: Int,
+    val user_id: Int,
+    val stock_id: Int,
     val quantity: Int
 )
 
 data class SellStockRequest(
-    val userId: Int,
-    val stockId: Int,
+    val user_id: Int,
+    val stock_id: Int,
     val quantity: Int
 )
 
 data class BuySellResponse(
-    val message: String
+    val message: String?,
+    val error: String?
 )
 
 data class UserInfoResponse(
-    val userId: Int?,
+    val user_id: Int?,
     val username: String?,
     val balance: Double?,
     val error: String?
 )
 
 data class UserStockResponse(
-    val stockId: Int?,
+    val stock_id: Int?,
     val name: String?,
     val price: Double?,
-    val boughtQuantity: Int?,
+    val bought_quantity: Int?,
     val error: String?
 )
 

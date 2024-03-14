@@ -16,10 +16,15 @@ import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.lifecycle.lifecycleScope
+import com.example.investsandbox2.network.BuySellResponse
+import com.example.investsandbox2.network.BuyStockRequest
 import com.example.investsandbox2.network.RetrofitClient
+import com.example.investsandbox2.network.SellStockRequest
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class StockActivity : ComponentActivity() {
     private var buyMode by mutableStateOf(false)
@@ -49,7 +54,10 @@ class StockActivity : ComponentActivity() {
                         } else {
                             fetchUserStocks()
                         }
-                    }
+                    },
+                    userId = userId,
+                    updateUserInfo = ::fetchUserInfo,
+                    showToast = ::showToast
                 )
             }
         }
@@ -70,7 +78,7 @@ class StockActivity : ComponentActivity() {
                     fetchUserStocks()
                 }
             } catch (e: Exception) {
-                showErrorToast("Error during fetching user info")
+                showToast("Error during fetching user info")
             }
         }
     }
@@ -86,14 +94,14 @@ class StockActivity : ComponentActivity() {
                 }
                 stocks = userStocksResponse.map { stockResponse ->
                     Stock(
-                        id = stockResponse.stockId ?: 0,
+                        id = stockResponse.stock_id ?: 0,
                         name = stockResponse.name ?: "",
                         price = stockResponse.price ?: 0.0,
-                        quantity = stockResponse.boughtQuantity ?: 0
+                        quantity = stockResponse.bought_quantity ?: 0
                     )
                 }
             } catch (e: Exception) {
-                showErrorToast("Error during fetching stocks")
+                showToast("Error during fetching stocks")
             }
         }
     }
@@ -116,12 +124,12 @@ class StockActivity : ComponentActivity() {
                     )
                 }
             } catch (e: Exception) {
-                showErrorToast("Error during fetching stocks")
+                showToast("Error during fetching stocks")
             }
         }
     }
 
-    private fun showErrorToast(message: String) {
+    private fun showToast(message: String) {
         CoroutineScope(Dispatchers.Main).launch {
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
@@ -135,7 +143,10 @@ fun StockScreen(
     balance: Double,
     stocks: List<Stock>,
     buyMode: Boolean,
-    onToggleMode: () -> Unit
+    onToggleMode: () -> Unit,
+    userId: Int,
+    updateUserInfo: () -> Unit,
+    showToast: (String) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -201,8 +212,15 @@ fun StockScreen(
                 }
             } else {
                 items(stocks) { stock ->
-                    StockItem(stock = stock, buyMode = buyMode)
+                    StockItem(
+                        stock = stock,
+                        buyMode = buyMode,
+                        userId = userId,
+                        updateUserInfo = updateUserInfo,
+                        showToast = showToast
+                    )
                 }
+
             }
         }
     }
@@ -210,7 +228,13 @@ fun StockScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StockItem(stock: Stock, buyMode: Boolean) {
+fun StockItem(
+    stock: Stock,
+    buyMode: Boolean,
+    userId: Int,
+    updateUserInfo: () -> Unit,
+    showToast: (String) -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
     var numberOfStocks by remember { mutableStateOf(0) }
 
@@ -288,13 +312,41 @@ fun StockItem(stock: Stock, buyMode: Boolean) {
             confirmButton = {
                 Button(
                     onClick = {
-                        // Placeholder for API request
-                        if (buyMode) {
-                            println("Buying $numberOfStocks stocks of ${stock.name}")
-                        } else {
-                            println("Selling $numberOfStocks stocks of ${stock.name}")
+                        val apiService = RetrofitClient.apiService
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                val response = if (buyMode) {
+                                    val buyRequest = BuyStockRequest(user_id = userId,
+                                        stock_id = stock.id, quantity = numberOfStocks)
+                                    apiService.buyStock(buyRequest)
+                                } else {
+                                    val sellRequest = SellStockRequest(user_id = userId,
+                                        stock_id = stock.id, quantity = numberOfStocks)
+                                    apiService.sellStock(sellRequest)
+                                }
+
+                                if (response.error != null) {
+                                    showToast(response.error)
+                                } else {
+                                    if (buyMode) {
+                                        showToast("Successfully bought $numberOfStocks of ${stock.name}")
+                                    } else {
+                                        showToast("Successfully sold $numberOfStocks of ${stock.name}")
+                                    }
+                                    updateUserInfo()
+                                }
+                            } catch (e: HttpException) {
+                                // Handling HTTP exception
+                                val responseBody = e.response()?.errorBody()?.string()
+                                val errorResponse = Gson().fromJson(responseBody, BuySellResponse::class.java)
+                                errorResponse?.error?.let { showToast(it) } ?: showToast("Unknown error")
+                            } catch (e: Exception) {
+                                // Handling general exception
+                                showToast("Unexpected error during stock selling/buying")
+                            } finally {
+                                showDialog = false
+                            }
                         }
-                        showDialog = false
                     }
                 ) {
                     Text(text = if (buyMode) "Buy Stock" else "Sell Stock")
@@ -322,9 +374,24 @@ fun StockPreview() {
             Stock(2, "Company B", 75.0, 5),
             Stock(3, "Company C", 100.0, 8)
         )
-        var buyMode = false
-        StockScreen(username = username, balance = balance, stocks = stocks, buyMode = buyMode){
-            buyMode = !buyMode
-        }
+        var buyMode by remember { mutableStateOf(false) }
+
+        // Define functions to mimic functionality of onToggleMode
+        val toggleMode = { buyMode = !buyMode }
+        val updateUserInfo: () -> Unit = {}
+        val showToast: (String) -> Unit = {}
+
+        StockScreen(
+            username = username,
+            balance = balance,
+            stocks = stocks,
+            buyMode = buyMode,
+            onToggleMode = toggleMode,
+            userId = 0, // Placeholder value, not used in preview
+            updateUserInfo = updateUserInfo, // Placeholder, not used in preview
+            showToast = showToast // Placeholder, not used in preview
+        )
     }
 }
+
+
