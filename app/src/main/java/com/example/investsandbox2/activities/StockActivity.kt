@@ -40,14 +40,17 @@ class StockActivity : ComponentActivity() {
                         Stock("Company C", 100.0, 8)
                     )
                 }
-                StockScreen(username, balance, stocks, buyMode) {
-                    buyMode = !buyMode
-                }
+                StockScreen(
+                    username = username,
+                    balance = balance,
+                    stocks = stocks,
+                    buyMode = buyMode,
+                    onToggleMode = { buyMode = !buyMode }
+                )
             }
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +131,6 @@ fun StockScreen(
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,7 +234,6 @@ fun StockItem(stock: Stock, buyMode: Boolean) {
         )
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
