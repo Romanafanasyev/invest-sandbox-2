@@ -26,7 +26,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
+/**
+ * Activity representing the main stock trading interface.
+ */
 class StockActivity : ComponentActivity() {
+
+    // State variables for user information and stock data
     private var buyMode by mutableStateOf(false)
     private var userId: Int = 0
     private var username by mutableStateOf("")
@@ -36,10 +41,12 @@ class StockActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Retrieve user ID from intent
         userId = intent.getIntExtra("USER_ID", 0)
 
         fetchUserInfo()
 
+        // Set content to StockScreen composable
         setContent {
             InvestSandbox2Theme {
                 StockScreen(
@@ -48,6 +55,7 @@ class StockActivity : ComponentActivity() {
                     stocks = stocks,
                     buyMode = buyMode,
                     onToggleMode = {
+                        // Toggle between buy and browse modes
                         buyMode = !buyMode
                         if (buyMode) {
                             fetchAllStocks()
@@ -63,6 +71,7 @@ class StockActivity : ComponentActivity() {
         }
     }
 
+    // Fetch user information from API
     private fun fetchUserInfo() {
         lifecycleScope.launch {
             try {
@@ -83,6 +92,7 @@ class StockActivity : ComponentActivity() {
         }
     }
 
+    // Fetch user's owned stocks from API
     private fun fetchUserStocks() {
         lifecycleScope.launch {
             try {
@@ -106,6 +116,7 @@ class StockActivity : ComponentActivity() {
         }
     }
 
+    // Fetch all available stocks from API
     private fun fetchAllStocks() {
         lifecycleScope.launch {
             try {
@@ -129,6 +140,7 @@ class StockActivity : ComponentActivity() {
         }
     }
 
+    // Display toast message
     private fun showToast(message: String) {
         CoroutineScope(Dispatchers.Main).launch {
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
@@ -136,6 +148,9 @@ class StockActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable function representing the stock trading screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockScreen(
@@ -226,6 +241,9 @@ fun StockScreen(
     }
 }
 
+/**
+ * Composable function representing a single stock item.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockItem(
@@ -363,6 +381,9 @@ fun StockItem(
     }
 }
 
+/**
+ * Composable function for previewing the StockScreen.
+ */
 @Preview(showBackground = true)
 @Composable
 fun StockPreview() {

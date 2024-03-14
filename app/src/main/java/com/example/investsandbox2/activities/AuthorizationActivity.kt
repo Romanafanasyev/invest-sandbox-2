@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import android.widget.Toast
-import com.example.investsandbox2.models.AuthResponse
+import com.example.investsandbox2.network.AuthResponse
 import com.example.investsandbox2.network.LoginRequest
 import com.example.investsandbox2.network.RegistrationRequest
 import com.example.investsandbox2.network.RetrofitClient
@@ -24,9 +24,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
+/**
+ * Activity responsible for user authorization (login/sign-up).
+ */
 class AuthorizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Set content to AuthorizationScreen composable
         setContent {
             InvestSandbox2Theme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -38,8 +43,8 @@ class AuthorizationActivity : ComponentActivity() {
                                 try {
                                     val response = RetrofitClient.apiService.login(LoginRequest(username, password))
                                     // Handle response
-                                    response.userId?.let {
-                                        moveToStocksActivity(response.userId)
+                                    response.user_id?.let {
+                                        moveToStocksActivity(response.user_id)
                                     } ?: run {
                                         // Handle error
                                         showErrorToast(response.error ?: "Unknown error occurred")
@@ -62,8 +67,8 @@ class AuthorizationActivity : ComponentActivity() {
                                     val response = RetrofitClient.apiService.register(
                                         RegistrationRequest(username, password)
                                     )
-                                    response.userId?.let {
-                                        moveToStocksActivity(response.userId)
+                                    response.user_id?.let {
+                                        moveToStocksActivity(response.user_id)
                                     } ?: run {
                                         showErrorToast(response.error ?: "Unknown error occurred")
                                     }
@@ -84,13 +89,14 @@ class AuthorizationActivity : ComponentActivity() {
         }
     }
 
-
+    // Display error toast message
     private fun showErrorToast(message: String) {
         CoroutineScope(Dispatchers.Main).launch {
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
     }
 
+    // Move to StockActivity upon successful authentication
     private fun moveToStocksActivity(userId: Int) {
         val intent = Intent(this, StockActivity::class.java).apply {
             putExtra("USER_ID", userId)
@@ -99,6 +105,9 @@ class AuthorizationActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable function representing the authorization screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthorizationScreen(
@@ -153,6 +162,9 @@ fun AuthorizationScreen(
     }
 }
 
+/**
+ * Composable function for previewing the AuthorizationScreen.
+ */
 @Preview(showBackground = true)
 @Composable
 fun AuthorizationPreview() {

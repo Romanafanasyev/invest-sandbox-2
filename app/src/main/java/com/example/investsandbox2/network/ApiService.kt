@@ -1,6 +1,5 @@
 package com.example.investsandbox2.network
 
-import com.example.investsandbox2.models.AuthResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -78,4 +77,9 @@ data class LoginRequest(
 data class RegistrationRequest(
     val username: String,
     val password: String
+)
+
+data class AuthResponse(
+    val user_id: Int?,
+    val error: String?
 )
