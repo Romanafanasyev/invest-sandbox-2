@@ -14,12 +14,15 @@ import androidx.compose.ui.unit.dp
 import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import android.widget.Toast
+import com.example.investsandbox2.models.AuthResponse
 import com.example.investsandbox2.network.LoginRequest
 import com.example.investsandbox2.network.RegistrationRequest
 import com.example.investsandbox2.network.RetrofitClient
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class AuthorizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,8 +44,13 @@ class AuthorizationActivity : ComponentActivity() {
                                         // Handle error
                                         showErrorToast(response.error ?: "Unknown error occurred")
                                     }
+                                } catch (e: HttpException) {
+                                    // Handling HTTP exception
+                                    val responseBody = e.response()?.errorBody()?.string()
+                                    val errorResponse = Gson().fromJson(responseBody, AuthResponse::class.java)
+                                    errorResponse?.error?.let { showErrorToast(it) } ?: showErrorToast("Unknown error")
                                 } catch (e: Exception) {
-                                    // Handle error
+                                    // Handle other exceptions
                                     showErrorToast("Network error occurred")
                                 }
                             }
@@ -59,7 +67,13 @@ class AuthorizationActivity : ComponentActivity() {
                                     } ?: run {
                                         showErrorToast(response.error ?: "Unknown error occurred")
                                     }
+                                } catch (e: HttpException) {
+                                    // Handling HTTP exception
+                                    val responseBody = e.response()?.errorBody()?.string()
+                                    val errorResponse = Gson().fromJson(responseBody, AuthResponse::class.java)
+                                    errorResponse?.error?.let { showErrorToast(it) } ?: showErrorToast("Unknown error")
                                 } catch (e: Exception) {
+                                    // Handle other exceptions
                                     showErrorToast("Network error occurred")
                                 }
                             }
@@ -69,6 +83,7 @@ class AuthorizationActivity : ComponentActivity() {
             }
         }
     }
+
 
     private fun showErrorToast(message: String) {
         CoroutineScope(Dispatchers.Main).launch {
