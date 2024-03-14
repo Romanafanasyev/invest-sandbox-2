@@ -39,7 +39,7 @@ class AuthorizationActivity : ComponentActivity() {
     }
 
     private fun moveToProfile(username: String) {
-        val intent = Intent(this, ProfileActivity::class.java).apply {
+        val intent = Intent(this, StockActivity::class.java).apply {
             putExtra("USERNAME", username)
         }
         startActivity(intent)

@@ -15,7 +15,9 @@ import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 
-class ProfileActivity : ComponentActivity() {
+class StockActivity : ComponentActivity() {
+    private var buyMode by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -23,27 +25,39 @@ class ProfileActivity : ComponentActivity() {
                 // Placeholder data
                 val username = "John Doe"
                 val balance = 1000.0
-                val stocks = listOf(
-                    Stock("Company A", 50.0, 10),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company B", 75.0, 5),
-                    Stock("Company C", 100.0, 8)
-                )
-                ProfileScreen(username, balance, stocks)
+                val stocks = if (buyMode) {
+                    // Fetch stocks available for buying from another API route
+                    listOf(
+                        Stock("Company X", 60.0, 10),
+                        Stock("Company Y", 80.0, 5),
+                        Stock("Company Z", 110.0, 8)
+                    )
+                } else {
+                    // Placeholder data for stocks user already owns
+                    listOf(
+                        Stock("Company A", 50.0, 10),
+                        Stock("Company B", 75.0, 5),
+                        Stock("Company C", 100.0, 8)
+                    )
+                }
+                StockScreen(username, balance, stocks, buyMode) {
+                    buyMode = !buyMode
+                }
             }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(username: String, balance: Double, stocks: List<Stock>) {
+fun StockScreen(
+    username: String,
+    balance: Double,
+    stocks: List<Stock>,
+    buyMode: Boolean,
+    onToggleMode: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top,
@@ -68,6 +82,27 @@ fun ProfileScreen(username: String, balance: Double, stocks: List<Stock>) {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+            Button(
+                onClick = onToggleMode,
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Text(text = if (buyMode) "My Stocks" else "Browse Stocks")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Title
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = if (buyMode) "Stock Market"
+                else "Owned Stocks",
+                style = MaterialTheme.typography.titleMedium
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -79,14 +114,15 @@ fun ProfileScreen(username: String, balance: Double, stocks: List<Stock>) {
             if (stocks.isEmpty()) {
                 item {
                     Text(
-                        text = "No stocks yet? Buy some on stock exchange",
+                        text = if (buyMode) "No stocks available for buying"
+                        else "No stocks owned yet? Buy some on stock exchange",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
             } else {
                 items(stocks) { stock ->
-                    StockItem(stock = stock)
+                    StockItem(stock = stock, buyMode = buyMode)
                 }
             }
         }
@@ -96,8 +132,8 @@ fun ProfileScreen(username: String, balance: Double, stocks: List<Stock>) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StockItem(stock: Stock) {
-    var showSellDialog by remember { mutableStateOf(false) }
+fun StockItem(stock: Stock, buyMode: Boolean) {
+    var showDialog by remember { mutableStateOf(false) }
     var numberOfStocks by remember { mutableStateOf(0) }
 
     Card(
@@ -133,27 +169,27 @@ fun StockItem(stock: Stock) {
                 )
             }
             Button(
-                onClick = { showSellDialog = true },
+                onClick = { showDialog = true },
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .widthIn(min = ButtonDefaults.MinWidth)
             ) {
-                Text(text = "Sell")
+                Text(text = if (buyMode) "Buy" else "Sell")
             }
 
         }
     }
 
-    if (showSellDialog) {
+    if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showSellDialog = false },
+            onDismissRequest = { showDialog = false },
             title = {
-                Text(text = "Sell Stocks")
+                Text(text = if (buyMode) "Buy Stocks" else "Sell Stocks")
             },
             text = {
                 Column {
                     Text(
-                        text = "Number of stocks to sell:",
+                        text = if (buyMode) "Number of stocks to buy:" else "Number of stocks to sell:",
                         style = MaterialTheme.typography.bodySmall
                     )
                     TextField(
@@ -165,7 +201,8 @@ fun StockItem(stock: Stock) {
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
-                        text = "Total Price: ${numberOfStocks * stock.price}$",
+                        text = if (buyMode) "Total Price: ${numberOfStocks * stock.price}$"
+                        else "Total Price: ${numberOfStocks * stock.price}$",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -174,16 +211,20 @@ fun StockItem(stock: Stock) {
                 Button(
                     onClick = {
                         // Placeholder for API request
-                        println("Selling ${numberOfStocks} stocks of ${stock.name}")
-                        showSellDialog = false
+                        if (buyMode) {
+                            println("Buying $numberOfStocks stocks of ${stock.name}")
+                        } else {
+                            println("Selling $numberOfStocks stocks of ${stock.name}")
+                        }
+                        showDialog = false
                     }
                 ) {
-                    Text(text = "Sell Stock")
+                    Text(text = if (buyMode) "Buy Stock" else "Sell Stock")
                 }
             },
             dismissButton = {
                 Button(
-                    onClick = { showSellDialog = false }
+                    onClick = { showDialog = false }
                 ) {
                     Text(text = "Cancel")
                 }
@@ -195,7 +236,7 @@ fun StockItem(stock: Stock) {
 
 @Preview(showBackground = true)
 @Composable
-fun ProfilePreview() {
+fun StockPreview() {
     InvestSandbox2Theme {
         val username = "JohnDoe"
         val balance = 1000.0
@@ -204,7 +245,9 @@ fun ProfilePreview() {
             Stock("Company B", 75.0, 5),
             Stock("Company C", 100.0, 8)
         )
-        ProfileScreen(username = username, balance = balance, stocks = stocks)
+        var buyMode = false
+        StockScreen(username = username, balance = balance, stocks = stocks, buyMode = buyMode){
+            buyMode = !buyMode
+        }
     }
 }
-
