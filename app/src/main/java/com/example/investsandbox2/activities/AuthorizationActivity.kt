@@ -13,6 +13,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import android.widget.Toast
+import com.example.investsandbox2.network.LoginRequest
+import com.example.investsandbox2.network.RegistrationRequest
+import com.example.investsandbox2.network.RetrofitClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class AuthorizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,14 +30,42 @@ class AuthorizationActivity : ComponentActivity() {
                     AuthorizationScreen(
                         isLoginPage = true,
                         onLoginClicked = { username, password ->
-                            // Placeholder for API interaction
-                            println("Login clicked with username: $username and password: $password")
-                            moveToProfile(username)
+                            // Call login API
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    val response = RetrofitClient.apiService.login(LoginRequest(username, password))
+                                    // Handle response
+                                    response.userId?.let {
+                                        moveToProfile(response.userId)
+                                    } ?: run {
+                                        // Handle error
+                                        showErrorToast(response.error ?: "Unknown error occurred")
+                                    }
+                                } catch (e: Exception) {
+                                    // Handle error
+                                    showErrorToast("Network error occurred")
+                                }
+                            }
                         },
                         onSignUpClicked = { username, password ->
-                            // Placeholder for API interaction
-                            println("Sign up clicked with username: $username and password: $password")
-                            moveToProfile(username)
+                            // Call register API
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    val response = RetrofitClient.apiService.register(
+                                        RegistrationRequest(username, password)
+                                    )
+                                    // Handle response
+                                    response.userId?.let {
+                                        moveToProfile(response.userId)
+                                    } ?: run {
+                                        // Handle error
+                                        showErrorToast(response.error ?: "Unknown error occurred")
+                                    }
+                                } catch (e: Exception) {
+                                    // Handle error
+                                    showErrorToast("Network error occurred")
+                                }
+                            }
                         }
                     )
                 }
@@ -38,9 +73,15 @@ class AuthorizationActivity : ComponentActivity() {
         }
     }
 
-    private fun moveToProfile(username: String) {
+    private fun showErrorToast(message: String) {
+        CoroutineScope(Dispatchers.Main).launch {
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun moveToProfile(userId: Int) {
         val intent = Intent(this, StockActivity::class.java).apply {
-            putExtra("USERNAME", username)
+            putExtra("USER_ID", userId)
         }
         startActivity(intent)
     }
