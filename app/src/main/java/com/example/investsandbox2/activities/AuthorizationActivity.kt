@@ -36,7 +36,7 @@ class AuthorizationActivity : ComponentActivity() {
                                     val response = RetrofitClient.apiService.login(LoginRequest(username, password))
                                     // Handle response
                                     response.userId?.let {
-                                        moveToProfile(response.userId)
+                                        moveToStocksActivity(response.userId)
                                     } ?: run {
                                         // Handle error
                                         showErrorToast(response.error ?: "Unknown error occurred")
@@ -54,15 +54,12 @@ class AuthorizationActivity : ComponentActivity() {
                                     val response = RetrofitClient.apiService.register(
                                         RegistrationRequest(username, password)
                                     )
-                                    // Handle response
                                     response.userId?.let {
-                                        moveToProfile(response.userId)
+                                        moveToStocksActivity(response.userId)
                                     } ?: run {
-                                        // Handle error
                                         showErrorToast(response.error ?: "Unknown error occurred")
                                     }
                                 } catch (e: Exception) {
-                                    // Handle error
                                     showErrorToast("Network error occurred")
                                 }
                             }
@@ -79,7 +76,7 @@ class AuthorizationActivity : ComponentActivity() {
         }
     }
 
-    private fun moveToProfile(userId: Int) {
+    private fun moveToStocksActivity(userId: Int) {
         val intent = Intent(this, StockActivity::class.java).apply {
             putExtra("USER_ID", userId)
         }

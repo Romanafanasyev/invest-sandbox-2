@@ -1,6 +1,7 @@
 package com.example.investsandbox2.activities
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -14,40 +15,115 @@ import com.example.investsandbox2.models.Stock
 import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.lifecycle.lifecycleScope
+import com.example.investsandbox2.network.RetrofitClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class StockActivity : ComponentActivity() {
     private var buyMode by mutableStateOf(false)
+    private var userId: Int = 0
+    private var username by mutableStateOf("")
+    private var balance by mutableStateOf(0.0)
+    private var stocks by mutableStateOf(emptyList<Stock>())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        userId = intent.getIntExtra("USER_ID", 0)
+
+        fetchUserInfo()
+
         setContent {
             InvestSandbox2Theme {
-                // Placeholder data
-                val username = "John Doe"
-                val balance = 1000.0
-                val stocks = if (buyMode) {
-                    // Fetch stocks available for buying from another API route
-                    listOf(
-                        Stock("Company X", 60.0, 10),
-                        Stock("Company Y", 80.0, 5),
-                        Stock("Company Z", 110.0, 8)
-                    )
-                } else {
-                    // Placeholder data for stocks user already owns
-                    listOf(
-                        Stock("Company A", 50.0, 10),
-                        Stock("Company B", 75.0, 5),
-                        Stock("Company C", 100.0, 8)
-                    )
-                }
                 StockScreen(
                     username = username,
                     balance = balance,
                     stocks = stocks,
                     buyMode = buyMode,
-                    onToggleMode = { buyMode = !buyMode }
+                    onToggleMode = {
+                        buyMode = !buyMode
+                        if (buyMode) {
+                            fetchAllStocks()
+                        } else {
+                            fetchUserStocks()
+                        }
+                    }
                 )
             }
+        }
+    }
+
+    private fun fetchUserInfo() {
+        lifecycleScope.launch {
+            try {
+                val userInfoResponse = RetrofitClient.apiService.getUserInfo(userId)
+                userInfoResponse.error?.let {
+                    return@launch
+                }
+                username = userInfoResponse.username ?: ""
+                balance = userInfoResponse.balance ?: 0.0
+                if (buyMode) {
+                    fetchAllStocks()
+                } else {
+                    fetchUserStocks()
+                }
+            } catch (e: Exception) {
+                showErrorToast("Error during fetching user info")
+            }
+        }
+    }
+
+    private fun fetchUserStocks() {
+        lifecycleScope.launch {
+            try {
+                val userStocksResponse = RetrofitClient.apiService.getUserStocks(userId)
+                userStocksResponse.forEach {
+                    it.error?.let {
+                        return@forEach
+                    }
+                }
+                stocks = userStocksResponse.map { stockResponse ->
+                    Stock(
+                        id = stockResponse.stockId ?: 0,
+                        name = stockResponse.name ?: "",
+                        price = stockResponse.price ?: 0.0,
+                        quantity = stockResponse.boughtQuantity ?: 0
+                    )
+                }
+            } catch (e: Exception) {
+                showErrorToast("Error during fetching stocks")
+            }
+        }
+    }
+
+    private fun fetchAllStocks() {
+        lifecycleScope.launch {
+            try {
+                val allStocksResponse = RetrofitClient.apiService.getAllStocks()
+                allStocksResponse.forEach {
+                    it.error?.let {
+                        return@forEach
+                    }
+                }
+                stocks = allStocksResponse.map { stockResponse ->
+                    Stock(
+                        id = stockResponse.id ?: 0,
+                        name = stockResponse.name ?: "",
+                        price = stockResponse.price ?: 0.0,
+                        quantity = stockResponse.quantity ?: 0
+                    )
+                }
+            } catch (e: Exception) {
+                showErrorToast("Error during fetching stocks")
+            }
+        }
+    }
+
+    private fun showErrorToast(message: String) {
+        CoroutineScope(Dispatchers.Main).launch {
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
     }
 }
@@ -242,9 +318,9 @@ fun StockPreview() {
         val username = "JohnDoe"
         val balance = 1000.0
         val stocks = listOf(
-            Stock("Company A", 50.0, 10),
-            Stock("Company B", 75.0, 5),
-            Stock("Company C", 100.0, 8)
+            Stock(1, "Company A", 50.0, 10),
+            Stock(2, "Company B", 75.0, 5),
+            Stock(3, "Company C", 100.0, 8)
         )
         var buyMode = false
         StockScreen(username = username, balance = balance, stocks = stocks, buyMode = buyMode){
