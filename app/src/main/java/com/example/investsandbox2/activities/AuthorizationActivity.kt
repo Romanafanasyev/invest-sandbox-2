@@ -14,6 +14,10 @@ import androidx.compose.ui.unit.dp
 import com.example.investsandbox2.ui.theme.InvestSandbox2Theme
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import android.widget.Toast
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.example.investsandbox2.network.AuthResponse
 import com.example.investsandbox2.network.LoginRequest
 import com.example.investsandbox2.network.RegistrationRequest
@@ -28,13 +32,16 @@ import retrofit2.HttpException
  * Activity responsible for user authorization (login/sign-up).
  */
 class AuthorizationActivity : ComponentActivity() {
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Set content to AuthorizationScreen composable
         setContent {
             InvestSandbox2Theme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Surface(modifier = Modifier.fillMaxSize().semantics {
+                    testTagsAsResourceId = true
+                }, color = MaterialTheme.colorScheme.background) {
                     AuthorizationScreen(
                         isLoginPage = true,
                         onLoginClicked = { username, password ->
@@ -131,7 +138,8 @@ fun AuthorizationScreen(
         TextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") }
+            label = { Text("Username") },
+            modifier = Modifier.testTag("usernameField")
         )
         Spacer(modifier = Modifier.height(8.dp))
         var password by remember { mutableStateOf("") }
@@ -139,11 +147,13 @@ fun AuthorizationScreen(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation()
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.testTag("passwordField")
         )
         Spacer(modifier = Modifier.height(16.dp))
         if (isLoginPageState) {
-            Button(onClick = { onLoginClicked(username, password) }) {
+            Button(onClick = { onLoginClicked(username, password) },
+                modifier = Modifier.testTag("loginButton")) {
                 Text(text = "Log in")
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -151,11 +161,13 @@ fun AuthorizationScreen(
                 Text(text = "Don't have an account yet?")
             }
         } else {
-            Button(onClick = { onSignUpClicked(username, password) }) {
+            Button(onClick = { onSignUpClicked(username, password) },
+                modifier = Modifier.testTag("signUpButton")) {
                 Text(text = "Sign up")
             }
             Spacer(modifier = Modifier.height(8.dp))
-            TextButton(onClick = { isLoginPageState = true }) {
+            TextButton(onClick = { isLoginPageState = true },
+                modifier = Modifier.testTag("signUpLink")) {
                 Text(text = "Already have an account?")
             }
         }
