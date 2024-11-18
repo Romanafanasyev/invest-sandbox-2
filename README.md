@@ -18,7 +18,7 @@ Invest Sandbox — мобильное приложение, позволяюще
     ```sh
     git clone https://github.com/Romanafanasyev/invest-sandbox-2.git
     ```
-2. Установите зависимости через Gradle::
+2. Установите зависимости через Gradle:
     ```sh
     ./gradlew build
     ```
